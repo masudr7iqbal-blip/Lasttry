@@ -5,16 +5,18 @@ from flask import Flask
 from threading import Thread
 
 # --- কনফিগারেশন ---
+# আপনার নতুন টোকেনটি এখানে যোগ করা হয়েছে
 API_TOKEN = '8530900754:AAH-xyYJ1etm88QW2A_O3CabD5heC0-1Asc'
-# আপনার চ্যানেল আইডিগুলো (নিশ্চিত করুন বট এখানে এডমিন)
+
+# আপনার চ্যানেল আইডি এবং লিঙ্কগুলো
 CHANNELS = ['-1003731836152', '-1003831376808'] 
 CHANNEL_LINKS = ['https://t.me/+YJGx3ZCvX1g5Yzlh', 'https://t.me/+YlNW7n3rYsE4M2Mx']
-ADMIN_USERNAME = "Your_Telegram_Username" # @ ছাড়া আপনার ইউজারনেম দিন (প্রিমিয়াম কেনার জন্য)
-STORAGE_BOT_URL = "https://t.me/AlphaStorageBot?start=demo123" # আপনার ডেমো ভিডিও লিঙ্ক
+ADMIN_USERNAME = "Farabi_Admin" # এখানে আপনার নিজের ইউজারনেম দিন
+STORAGE_BOT_URL = "https://t.me/AlphaStorageBot?start=demo123"
 
 bot = telebot.TeleBot(API_TOKEN, threaded=False)
 
-# --- রেন্ডার যাতে বন্ধ না হয় (Keep Alive) ---
+# --- Render-এ বট সচল রাখার জন্য Flask Server ---
 app = Flask('')
 
 @app.route('/')
@@ -33,17 +35,19 @@ def is_subscribed(user_id):
     for chat_id in CHANNELS:
         try:
             member = bot.get_chat_member(chat_id, user_id)
+            # মেম্বার, এডমিন বা ক্রিয়েটর হলে জয়েন করা আছে ধরা হবে
             if member.status not in ['member', 'administrator', 'creator']:
                 return False
         except Exception as e:
-            print(f"Error: {e}")
-            return False
+            print(f"Error checking channel {chat_id}: {e}")
+            return False 
     return True
 
 # --- স্টার্ট কমান্ড ---
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    if is_subscribed(message.from_user.id):
+    user_id = message.from_user.id
+    if is_subscribed(user_id):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🎬 Watch Demo", url=STORAGE_BOT_URL))
         markup.add(types.InlineKeyboardButton("💎 Buy Premium", callback_data="buy"))
@@ -71,6 +75,6 @@ def handle(call):
         bot.send_message(call.message.chat.id, "💎 **Premium Features:**\n\n✅ Ad-free experience\n✅ Fast downloading\n✅ Unlimited access\n\nপ্রিমিয়াম কিনতে এডমিনের সাথে যোগাযোগ করুন।", reply_markup=markup, parse_mode="Markdown")
 
 if __name__ == "__main__":
-    keep_alive() # সার্ভার চালু করবে
-    print("Bot is starting...")
-    bot.infinity_polling()
+    keep_alive() # এটি রেন্ডারকে সিগনাল পাঠাবে যে অ্যাপ চালু আছে
+    print("Bot is starting with new token...")
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
