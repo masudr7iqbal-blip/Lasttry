@@ -4,77 +4,199 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- কনফিগারেশন ---
-# আপনার নতুন টোকেনটি এখানে যোগ করা হয়েছে
-API_TOKEN = '8530900754:AAH-xyYJ1etm88QW2A_O3CabD5heC0-1Asc'
+# ────────────────────────────────────────────────
+#                  কনফিগারেশন
+# ────────────────────────────────────────────────
 
-# আপনার চ্যানেল আইডি এবং লিঙ্কগুলো
-CHANNELS = ['-1003731836152', '-1003831376808'] 
-CHANNEL_LINKS = ['https://t.me/+YJGx3ZCvX1g5Yzlh', 'https://t.me/+YlNW7n3rYsE4M2Mx']
-ADMIN_USERNAME = "Farabi_Admin" # এখানে আপনার নিজের ইউজারনেম দিন
+API_TOKEN = '8530900754:AAFiFRX60Om1r485mTSdiEs37rvvjz78NbI'
+
+CHANNELS = [
+    '-1003708243060',      # Forcehub
+    '-1003831376808',      # অন্য চ্যানেল
+    # প্রয়োজন হলে আরও যোগ করো (যেমন Open source / BD Secrets এর ID)
+]
+
+CHANNEL_LINKS = [
+    'https://t.me/+cv_IIV016XljNDMx',     # Open source
+    'https://t.me/+n46o9tlogDVhMDMx',     # BD Secrets Fantasy
+    'https://t.me/+YlNW7n3rYsE4M2Mx',     # আগের একটা (প্রয়োজন অনুযায়ী অ্যাডজাস্ট করো)
+]
+
+ADMIN_USERNAME = "Farabi_Admin"
 STORAGE_BOT_URL = "https://t.me/AlphaStorageBot?start=demo123"
+BOT_USERNAME = "AlphapremiumB_bot"
+
+# ────────────────────────────────────────────────
+#               প্রিমিয়াম + এক্সক্লুসিভ টেক্সট
+# ────────────────────────────────────────────────
+
+WELCOME_TEXT = (
+    "🌟 **WELCOME TO THE INNER CIRCLE** 🌟\n\n"
+    "হ্যালো {name} —\n"
+    "তুমি এখন শুধুমাত্র **সিলেক্টেড ফিউ** এর জন্য রাখা এক্সক্লুসিভ জোনের ভেতরে ঢুকে পড়েছ।\n\n"
+    "এখান থেকে শুরু করো ↓"
+)
+
+FORCE_JOIN_TEXT = (
+    "🔐 **VIP ACCESS LOCKED** 🔐\n\n"
+    "এই এক্সক্লুসিভ কনটেন্ট শুধুমাত্র আমাদের **প্রাইভেট সার্কেল**-এর মেম্বারদের জন্য।\n"
+    "নিচের চ্যানেলগুলোতে জয়েন করে **আনলক** করো।\n\n"
+    "জয়েন শেষ হলে → **I'm Ready ✅** চাপো — অটো ভিতরে চলে আসবে!"
+)
+
+PREMIUM_TEXT = (
+    "✦ **ELITE MEMBERSHIP** ✦\n\n"
+    "• Zero Ads | Pure Experience\n"
+    "• Lightning Fast Downloads\n"
+    "• Unlimited Premium Files\n"
+    "• Early Access to New Drops\n"
+    "• Private Support Line\n\n"
+    "এই লেভেলের এক্সেস চাও? → এডমিনের সাথে কথা বলো"
+)
+
+HELP_TEXT = (
+    "🛠 **কমান্ড লিস্ট** 🛠\n\n"
+    "/start  →  মূল মেনু + এক্সেস চেক\n"
+    "/help   →  এই মেসেজটা দেখাবে\n\n"
+    "💎 প্রিমিয়াম ফিচার চাও?\n"
+    "→ /start চালিয়ে **প্রিমিয়াম কিনুন** বাটনে ক্লিক করো\n\n"
+    "কোনো সমস্যা হলে → @{admin}\n"
+    "Enjoy the exclusive zone 🔥"
+)
+
+# ────────────────────────────────────────────────
 
 bot = telebot.TeleBot(API_TOKEN, threaded=False)
 
-# --- Render-এ বট সচল রাখার জন্য Flask Server ---
+# Flask server to keep Render alive
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot is running 24/7!"
+    return "Telegram Bot is alive ✓"
 
-def run():
+def run_flask():
     app.run(host='0.0.0.0', port=8080)
 
 def keep_alive():
-    t = Thread(target=run)
-    t.start()
+    Thread(target=run_flask, daemon=True).start()
 
-# --- ফোর্স জয়েন চেক ফাংশন ---
-def is_subscribed(user_id):
-    for chat_id in CHANNELS:
+# ────────────────────────────────────────────────
+#             ফোর্স জয়েন চেক
+# ────────────────────────────────────────────────
+
+def is_user_subscribed(user_id: int) -> bool:
+    for channel_id in CHANNELS:
         try:
-            member = bot.get_chat_member(chat_id, user_id)
-            # মেম্বার, এডমিন বা ক্রিয়েটর হলে জয়েন করা আছে ধরা হবে
-            if member.status not in ['member', 'administrator', 'creator']:
+            member = bot.get_chat_member(channel_id, user_id)
+            if member.status not in ['member', 'administrator', 'creator', 'restricted']:
                 return False
         except Exception as e:
-            print(f"Error checking channel {chat_id}: {e}")
-            return False 
+            print(f"চ্যানেল চেক ত্রুটি {channel_id}: {e}")
+            return False
     return True
 
-# --- স্টার্ট কমান্ড ---
-@bot.message_handler(commands=['start'])
-def welcome(message):
-    user_id = message.from_user.id
-    if is_subscribed(user_id):
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("🎬 Watch Demo", url=STORAGE_BOT_URL))
-        markup.add(types.InlineKeyboardButton("💎 Buy Premium", callback_data="buy"))
-        bot.send_message(message.chat.id, f"✅ **স্বাগতম {message.from_user.first_name}!**\n\nআপনার এক্সেস আনলক হয়েছে। নিচের বাটন থেকে ডেমো দেখুন বা প্রিমিয়াম কিনুন।", reply_markup=markup, parse_mode="Markdown")
-    else:
-        markup = types.InlineKeyboardMarkup()
-        for i, link in enumerate(CHANNEL_LINKS):
-            markup.add(types.InlineKeyboardButton(f"Join Channel {i+1} 📢", url=link))
-        markup.add(types.InlineKeyboardButton("Joined ✅", callback_data="verify"))
-        bot.send_message(message.chat.id, "⚠️ **এক্সেস ডিনাইড!**\n\nবটটি ব্যবহার করতে আমাদের নিচের চ্যানেলগুলোতে জয়েন থাকতে হবে।", reply_markup=markup, parse_mode="Markdown")
+# ────────────────────────────────────────────────
+#               হ্যান্ডলার
+# ────────────────────────────────────────────────
 
-# --- বাটন হ্যান্ডলার ---
+@bot.message_handler(commands=['start'])
+def cmd_start(message):
+    user = message.from_user
+    name = user.first_name or "বন্ধু"
+
+    if is_user_subscribed(user.id):
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            types.InlineKeyboardButton("✨ Unlock Demo Vault", url=STORAGE_BOT_URL),
+            types.InlineKeyboardButton("👑 Claim Elite Access", callback_data="premium")
+        )
+        bot.send_message(
+            message.chat.id,
+            WELCOME_TEXT.format(name=name),
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+    else:
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for i, link in enumerate(CHANNEL_LINKS, 1):
+            markup.add(types.InlineKeyboardButton(f"✦ Join Private Channel {i} ✦", url=link))
+        
+        markup.add(types.InlineKeyboardButton("I'm Ready ✅ | Unlock Now", callback_data="check_join"))
+        
+        bot.send_message(
+            message.chat.id,
+            FORCE_JOIN_TEXT,
+            reply_markup=markup,
+            parse_mode="Markdown",
+            disable_web_page_preview=True
+        )
+
+@bot.message_handler(commands=['help'])
+def cmd_help(message):
+    bot.send_message(
+        message.chat.id,
+        HELP_TEXT.format(admin=ADMIN_USERNAME),
+        parse_mode="Markdown"
+    )
+
 @bot.callback_query_handler(func=lambda call: True)
-def handle(call):
-    if call.data == "verify":
-        if is_subscribed(call.from_user.id):
-            bot.answer_callback_query(call.id, "ধন্যবাদ! ✅")
-            welcome(call.message)
+def callback_handler(call):
+    user_id = call.from_user.id
+
+    if call.data == "check_join":
+        if is_user_subscribed(user_id):
+            bot.answer_callback_query(call.id, "🎉 আনলক সাকসেস! ভিতরে চলো 🔥", show_alert=False)
+            
+            name = call.from_user.first_name or "বন্ধু"
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            markup.add(
+                types.InlineKeyboardButton("✨ Unlock Demo Vault", url=STORAGE_BOT_URL),
+                types.InlineKeyboardButton("👑 Claim Elite Access", callback_data="premium")
+            )
+            # পুরোনো মেসেজ এডিট করে ওয়েলকাম দেখানো (ক্লিন অভিজ্ঞতা)
+            try:
+                bot.edit_message_text(
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.message_id,
+                    text=WELCOME_TEXT.format(name=name),
+                    reply_markup=markup,
+                    parse_mode="Markdown"
+                )
+            except:
+                # যদি এডিট না হয় (পুরোনো মেসেজ ডিলিট হয়ে গেলে)
+                bot.send_message(
+                    call.message.chat.id,
+                    WELCOME_TEXT.format(name=name),
+                    reply_markup=markup,
+                    parse_mode="Markdown"
+                )
         else:
-            bot.answer_callback_query(call.id, "⚠️ আপনি এখনো সব চ্যানেলে জয়েন করেননি!", show_alert=True)
-    
-    elif call.data == "buy":
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("💬 Contact Admin", url=f"https://t.me/{ADMIN_USERNAME}"))
-        bot.send_message(call.message.chat.id, "💎 **Premium Features:**\n\n✅ Ad-free experience\n✅ Fast downloading\n✅ Unlimited access\n\nপ্রিমিয়াম কিনতে এডমিনের সাথে যোগাযোগ করুন।", reply_markup=markup, parse_mode="Markdown")
+            bot.answer_callback_query(
+                call.id,
+                "আপনি এখনো সব চ্যানেলে জয়েন করেননি 😕\nদয়া করে চেক করুন!",
+                show_alert=True
+            )
+
+    elif call.data == "premium":
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            types.InlineKeyboardButton("👑 Talk to Elite Manager", url=f"https://t.me/{ADMIN_USERNAME}")
+        )
+        bot.send_message(
+            call.message.chat.id,
+            PREMIUM_TEXT,
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+        bot.answer_callback_query(call.id)
+
+# ────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    keep_alive() # এটি রেন্ডারকে সিগনাল পাঠাবে যে অ্যাপ চালু আছে
-    print("Bot is starting with new token...")
-    bot.infinity_polling(timeout=10, long_polling_timeout=5)
+    keep_alive()
+    print("Bot starting with updated design...")
+    try:
+        bot.infinity_polling(timeout=15, long_polling_timeout=10)
+    except Exception as e:
+        print(f"Polling stopped → {e}")
