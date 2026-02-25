@@ -1,9 +1,3 @@
-import telebot
-from telebot import types
-import os
-from flask import Flask
-from threading import Thread
-
 # ────────────────────────────────────────────────
 #                  কনফিগারেশন
 # ────────────────────────────────────────────────
@@ -11,18 +5,20 @@ from threading import Thread
 API_TOKEN = '8530900754:AAFiFRX60Om1r485mTSdiEs37rvvjz78NbI'
 
 CHANNELS = [
-    '-1003708243060',      # Forcehub
-    '-1003831376808',      # অন্য চ্যানেল
-    # প্রয়োজন হলে আরও যোগ করো (যেমন Open source / BD Secrets এর ID)
+    '-1003708243060',
+    '-1003831376808',
+    # আরও চ্যানেল ID যোগ করতে পারো
 ]
 
 CHANNEL_LINKS = [
-    'https://t.me/+cv_IIV016XljNDMx',     # Open source
-    'https://t.me/+n46o9tlogDVhMDMx',     # BD Secrets Fantasy
-    'https://t.me/+YlNW7n3rYsE4M2Mx',     # আগের একটা (প্রয়োজন অনুযায়ী অ্যাডজাস্ট করো)
+    'https://t.me/+cv_IIV016XljNDMx',
+    'https://t.me/+n46o9tlogDVhMDMx',
+    'https://t.me/+YlNW7n3rYsE4M2Mx',
 ]
 
-ADMIN_USERNAME = "Farabi_Admin"
+ADMIN_USERNAME = "XpremiumB"          # t.me/XpremiumB
+ADMIN_ID = 8153774922                 # তোমার আসল টেলিগ্রাম আইডি
+
 STORAGE_BOT_URL = "https://t.me/AlphaStorageBot?start=demo123"
 BOT_USERNAME = "AlphapremiumB_bot"
 
